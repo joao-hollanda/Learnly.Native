@@ -1,0 +1,25 @@
+import LoginAPI from '../services/LoginService';
+
+let refreshTimer = null;
+
+const REFRESH_INTERVAL = 23 * 60 * 60 * 1000; // 23h
+
+export function startTokenRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+
+  refreshTimer = setInterval(async () => {
+    try {
+      await LoginAPI.RefreshToken();
+    } catch (error) {
+      console.error('Erro ao renovar token automaticamente:', error);
+      stopTokenRefresh();
+    }
+  }, REFRESH_INTERVAL);
+}
+
+export function stopTokenRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}

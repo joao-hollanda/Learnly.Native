@@ -1,0 +1,86 @@
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+
+const local = "http://192.168.56.1:5080/api/";
+const deploy = "https://learnly-api-yrdu.onrender.com/api/";
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
+export const HTTPClient = axios.create({
+  baseURL: deploy,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json;charset=UTF-8",
+  },
+});
+
+HTTPClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (originalRequest._skipAuthRefresh) {
+      return Promise.reject(error);
+    }
+
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return HTTPClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshConfig = {
+          url: "Login/refresh",
+          method: "post",
+          _skipAuthRefresh: true,
+        };
+        await HTTPClient.request(refreshConfig);
+        processQueue(null, null);
+        isRefreshing = false;
+
+        originalRequest._retry = false;
+        return HTTPClient(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        await AsyncStorage.multiRemove(["id", "nome"]);
+
+        router.replace("/login");
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
