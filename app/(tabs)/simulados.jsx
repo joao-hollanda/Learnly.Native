@@ -130,7 +130,7 @@ export default function Simulados() {
             {simulados.length === 0 ? (
               <View style={styles.vazioContainer}>
                 <Text style={styles.vazioText}>
-                  Nenhum simulado ainda, que tal criar um? 😊
+                  Nenhum simulado ainda, que tal criar um?
                 </Text>
               </View>
             ) : (
@@ -328,14 +328,12 @@ const styles = StyleSheet.create({
     gap: 14,
   },
 
-  // Botão header
   botaoHeader: {
     backgroundColor: Colors.textPrimary,
     borderRadius: Radius.sm,
     padding: 8,
   },
 
-  // Vazio
   vazioContainer: {
     marginTop: 80,
     alignItems: "center",
@@ -348,7 +346,6 @@ const styles = StyleSheet.create({
     fontWeight: "300",
   },
 
-  // Histórico
   historicoTitulo: {
     fontSize: 28,
     fontWeight: "100",
@@ -413,7 +410,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sm,
   },
 
-  // Questão em andamento
   questaoCard: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -481,7 +477,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Botão enviar
   botaoEnviar: {
     backgroundColor: Colors.textPrimary,
     borderRadius: Radius.sm,

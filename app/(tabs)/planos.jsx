@@ -131,26 +131,53 @@ export default function Planos() {
     }
   }
 
-  async function handleLancarHoras({ materiaId, horas }) {
-    if (!materiaId || !horas) {
-      Toast.show({
+  const LIMITE_DIARIO = 20;
+
+  async function handleLancarHoras({ planoMateriaId, horas }) {
+    if (!planoMateriaId || !horas || horas <= 0) {
+      return Toast.show({
         type: "info",
-        text1: "Selecione a matéria e informe as horas",
+        text1: "Selecione a matéria e informe um valor válido!",
       });
-      return;
     }
+
+    if (horas > 20) {
+      return Toast.show({
+        type: "info",
+        text1: "O máximo de horas por lançamento é 20h",
+      });
+    }
+
     try {
       setLoading(true);
-      await PlanoAPI.LancarHoras(planoSelecionado.planoId, {
-        materiaId,
-        horas,
-      });
+
+      const comparacao = await PlanoAPI.CompararHoras();
+      const horasHoje = comparacao.horasHoje;
+      const totalComNovoLancamento = horasHoje + Number(horas);
+
+      if (totalComNovoLancamento > LIMITE_DIARIO) {
+        setLoading(false);
+        return Toast.show({
+          type: "info",
+          text1: `Limite diário de ${LIMITE_DIARIO}h atingido. Você já lançou ${horasHoje}h hoje.`,
+        });
+      }
+
+      await PlanoAPI.LancarHoras(planoMateriaId, Number(horas));
+
+      Toast.show({ type: "success", text1: `${horas}h lançadas com sucesso!` });
+
+      setModalLancar(false);
+      if (typeof setMostrarHoras === "function") setMostrarHoras(false);
+
+      queryClient.invalidateQueries({ queryKey: ["resumo"] });
+      queryClient.invalidateQueries({ queryKey: ["comparacaoHoras"] });
       queryClient.invalidateQueries({ queryKey: ["planos"] });
       queryClient.invalidateQueries({ queryKey: ["planoAtivo"] });
-      queryClient.invalidateQueries({ queryKey: ["resumo"] });
-      setModalLancar(false);
-      Toast.show({ type: "success", text1: `${horas}h lançadas com sucesso!` });
-    } catch {
+
+      if (typeof invalidarPlanos === "function") invalidarPlanos();
+    } catch (error) {
+      console.error(error);
       Toast.show({ type: "error", text1: "Erro ao lançar horas" });
     } finally {
       setLoading(false);
@@ -193,7 +220,7 @@ export default function Planos() {
         {planosList.length === 0 ? (
           <View style={styles.vazioContainer}>
             <Text style={styles.vazioText}>
-              Nenhum plano ainda, que tal criar um? 😊
+              Nenhum plano ainda, que tal criar um?
             </Text>
           </View>
         ) : (

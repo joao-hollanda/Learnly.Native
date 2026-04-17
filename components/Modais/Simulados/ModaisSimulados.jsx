@@ -89,7 +89,7 @@ export function ModalResultado({ resultado, onFinalizar }) {
   return (
     <ModalBase
       show={!!resultado}
-      onHide={() => {}} // backdrop estático igual ao web
+      onHide={() => {}}
       title="Resultado"
       iconType="success"
       icon={<Ionicons name="trophy" />}
@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  // Resultado
   badgesRow: {
     flexDirection: 'row',
     gap: 8,
@@ -260,7 +259,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Preview questão
   questaoCard: {
     width: '100%',
     backgroundColor: Colors.surface,

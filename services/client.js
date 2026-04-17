@@ -1,31 +1,39 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 
-const local = "http://192.168.56.1:5080/api/";
 const deploy = "https://learnly-api-yrdu.onrender.com/api/";
+
+const TOKEN_KEY = "access_token";
+const REFRESH_KEY = "refresh_token";
 
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
-
   failedQueue = [];
 };
 
 export const HTTPClient = axios.create({
   baseURL: deploy,
-  withCredentials: true,
   headers: {
     "Content-Type": "application/json;charset=UTF-8",
   },
+});
+
+HTTPClient.interceptors.request.use(async (config) => {
+  if (config.headers["Authorization"]) return config;
+
+  try {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    if (token) config.headers["Authorization"] = `Bearer ${token}`;
+  } catch {
+  }
+  return config;
 });
 
 HTTPClient.interceptors.response.use(
@@ -37,50 +45,54 @@ HTTPClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        })
-          .then(() => {
-            return HTTPClient(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+        }).then((token) => {
+          originalRequest.headers["Authorization"] = `Bearer ${token}`;
+          return HTTPClient(originalRequest);
+        });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const refreshConfig = {
-          url: "Login/refresh",
-          method: "post",
-          _skipAuthRefresh: true,
-        };
-        await HTTPClient.request(refreshConfig);
-        processQueue(null, null);
+        const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
+        if (!refreshToken) throw new Error("Sem refresh token");
+
+        const response = await axios.post(
+          `${deploy}Login/mobile/refresh`,
+          { refreshToken },
+          { _skipAuthRefresh: true }
+        );
+
+        const { accessToken, refreshToken: newRefresh } = response.data;
+
+        await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+        await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
+
+        HTTPClient.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+        originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
+
+        processQueue(null, accessToken);
         isRefreshing = false;
 
-        originalRequest._retry = false;
         return HTTPClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         isRefreshing = false;
 
-        await AsyncStorage.multiRemove(["id", "nome"]);
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(REFRESH_KEY);
+        delete HTTPClient.defaults.headers.common["Authorization"];
 
         router.replace("/login");
-
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  },
+  }
 );

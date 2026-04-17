@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import LoginAPI from '../services/LoginService';
+import { HTTPClient } from '../services/client';
 import { startTokenRefresh, stopTokenRefresh } from '../utils/tokenRefresh';
 
 const AuthContext = createContext(null);
 
+const TOKEN_KEY = 'access_token';
+const REFRESH_KEY = 'refresh_token';
+
 export function AuthProvider({ children }) {
-  const [authState, setAuthState] = useState(null);
-  
-  // 1. CRIAMOS O ESTADO DO USUÁRIO
-  const [user, setUser] = useState(null); 
+  const [authState, setAuthState] = useState(null); // null = loading, true = autenticado, false = não autenticado
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -17,43 +19,70 @@ export function AuthProvider({ children }) {
 
   async function checkAuth() {
     try {
-      const token = await SecureStore.getItemAsync('jwt');
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
       if (!token) {
         setAuthState(false);
         setUser(null);
         return;
       }
-      
-      const dadosUsuario = await LoginAPI.AuthCheck(); 
-      
+
+      HTTPClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      const dadosUsuario = await LoginAPI.GetUser();
       setUser(dadosUsuario);
       setAuthState(true);
       startTokenRefresh();
     } catch {
-      setAuthState(false);
-      setUser(null);
+      try {
+        await _tryRefresh();
+      } catch {
+        await _clearSession();
+      }
     }
   }
 
+  async function _tryRefresh() {
+    const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
+    if (!refreshToken) throw new Error('Sem refresh token');
+
+    const { accessToken, refreshToken: newRefresh } = await LoginAPI.RefreshTokenMobile(refreshToken);
+
+    await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+    await SecureStore.setItemAsync(REFRESH_KEY, newRefresh);
+
+    HTTPClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+    const dadosUsuario = await LoginAPI.GetUser();
+    setUser(dadosUsuario);
+    setAuthState(true);
+    startTokenRefresh();
+  }
+
+  async function _clearSession() {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
+    delete HTTPClient.defaults.headers.common['Authorization'];
+    setAuthState(false);
+    setUser(null);
+  }
+
   async function signIn(email, senha) {
-    const resposta = await LoginAPI.Login(email, senha);
-    
-    setUser(resposta); 
-    
+    const { accessToken, refreshToken } = await LoginAPI.Login(email, senha);
+
+    await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
+    await SecureStore.setItemAsync(REFRESH_KEY, refreshToken);
+
+    HTTPClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+    const dadosUsuario = await LoginAPI.GetUser();
+    setUser(dadosUsuario);
     setAuthState(true);
     startTokenRefresh();
   }
 
   async function signOut() {
-    try {
-      stopTokenRefresh();
-      await LoginAPI.Logout();
-    } catch {
-    } finally {
-      await SecureStore.deleteItemAsync('jwt');
-      setAuthState(false);
-      setUser(null); 
-    }
+    stopTokenRefresh();
+    await _clearSession();
   }
 
   return (

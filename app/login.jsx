@@ -112,6 +112,7 @@ const Login = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Seu nome"
+                placeholderTextColor="#999"
                 value={usuario}
                 onChangeText={setUsuario}
               />
@@ -123,6 +124,7 @@ const Login = () => {
             <TextInput
               style={styles.input}
               placeholder="seu@email.com"
+              placeholderTextColor="#999"
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -136,6 +138,7 @@ const Login = () => {
               <TextInput
                 style={[styles.input, { flex: 1, borderBottomWidth: 0 }]}
                 placeholder="••••••••"
+                placeholderTextColor="#999"
                 secureTextEntry={!mostrarSenha}
                 value={senha}
                 onChangeText={setSenha}
@@ -156,6 +159,7 @@ const Login = () => {
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
+                placeholderTextColor="#999"
                 secureTextEntry={!mostrarSenha}
                 value={confirmarSenha}
                 onChangeText={setConfirmarSenha}
@@ -212,6 +216,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ddd",
     paddingVertical: 8,
     fontSize: 16,
+    color: "#000",
   },
   inputSenhaWrapper: {
     flexDirection: "row",

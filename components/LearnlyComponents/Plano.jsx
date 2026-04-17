@@ -1,63 +1,61 @@
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
 import {
-  View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import Toast from 'react-native-toast-message';
-import LearnlyHeader from '../../components/LearnlyComponents/HeaderLearnly';
-import { Colors, Radius, Shadow, Typography } from '../../utils/theme';
-import PlanoAPI from '../../services/PlanoService';
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
+
+import LearnlyHeader from "../../components/LearnlyComponents/HeaderLearnly";
+import PlanoAPI from "../../services/PlanoService";
+import { Colors, Radius, Shadow, Typography } from "../../utils/theme";
 
 import {
+  ModalConfigurarPlano,
   ModalCriarPlano,
   ModalCriarPlanoIA,
-  ModalConfigurarPlano,
-  ModalVisualizarPlano,
-  ModalLancarHoras,
   ModalExcluirPlano,
-} from '../../components/Modais/Planos/ModaisPlanos';
-
-// ─── Mapper ──────────────────────────────────────────────────────────────────
+  ModalLancarHoras,
+  ModalVisualizarPlano,
+} from "../../components/Modais/Planos/ModaisPlanos";
 
 const mapPlanoBackend = (plano) => ({
-  planoId:        plano.planoId,
-  titulo:         plano.titulo,
-  objetivo:       plano.objetivo,
-  dataInicio:     plano.dataInicio,
-  dataFim:        plano.dataFim,
+  planoId: plano.planoId,
+  titulo: plano.titulo,
+  objetivo: plano.objetivo,
+  dataInicio: plano.dataInicio,
+  dataFim: plano.dataFim,
   horasPorSemana: plano.horasPorSemana,
-  ativo:          plano.ativo,
+  ativo: plano.ativo,
   materias: (plano.planoMaterias ?? []).map((pm) => ({
-    planoMateriaId:  pm.planoMateriaId,
-    materiaId:       pm.materiaId,
-    nome:            pm.materia.nome,
-    cor:             pm.materia.cor,
-    horasTotais:     pm.horasTotais,
+    planoMateriaId: pm.planoMateriaId, // ID correto para lançar horas
+    materiaId: pm.materiaId,
+    nome: pm.materia?.nome ?? "",
+    cor: pm.materia?.cor ?? Colors.primary,
+    horasTotais: pm.horasTotais,
     horasConcluidas: pm.horasConcluidas,
-    topicos:         pm.topicos ?? [],
+    topicos: pm.topicos ?? [],
   })),
 });
 
-// ─── Tela principal ──────────────────────────────────────────────────────────
-
 export default function Planos() {
   const queryClient = useQueryClient();
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // ── estado dos modais ──
-  const [modalCriar,       setModalCriar]       = useState(false);
-  const [modalCriarIA,     setModalCriarIA]      = useState(false);
-  const [modalVisualizar,  setModalVisualizar]   = useState(false);
-  const [modalConfigurar,  setModalConfigurar]   = useState(false);
-  const [modalLancar,      setModalLancar]       = useState(false);
-  const [modalExcluir,     setModalExcluir]      = useState(false);
-  const [planoSelecionado, setPlanoSelecionado]  = useState(null);
+  const [modalCriar, setModalCriar] = useState(false);
+  const [modalCriarIA, setModalCriarIA] = useState(false);
+  const [modalVisualizar, setModalVisualizar] = useState(false);
+  const [modalConfigurar, setModalConfigurar] = useState(false);
+  const [modalLancar, setModalLancar] = useState(false);
+  const [modalExcluir, setModalExcluir] = useState(false);
+  const [planoSelecionado, setPlanoSelecionado] = useState(null);
 
-  // ── query ──
   const { data: planosList = [] } = useQuery({
-    queryKey: ['planos'],
+    queryKey: ["planos"],
     queryFn: async () => {
       const resposta = await PlanoAPI.Listar5();
       return resposta.map(mapPlanoBackend);
@@ -65,10 +63,11 @@ export default function Planos() {
     staleTime: Infinity,
   });
 
-  const planoAtivoIndex = planosList.findIndex((p) => p.ativo);
-  const planoAtivo      = planosList[planoAtivoIndex >= 0 ? planoAtivoIndex : 0];
+  const LIMITE_DIARIO = 20;
 
-  // ── helpers de navegação entre modais ──
+  const planoAtivoIndex = planosList.findIndex((p) => p.ativo);
+  const planoAtivo = planosList[planoAtivoIndex >= 0 ? planoAtivoIndex : 0];
+
   function abrirVisualizar(plano) {
     setPlanoSelecionado(plano);
     setModalVisualizar(true);
@@ -89,16 +88,15 @@ export default function Planos() {
     setModalExcluir(true);
   }
 
-  // ── handlers de API ──
   async function handleCriarPlano(dados) {
     try {
       setLoading(true);
       await PlanoAPI.Criar(dados);
-      queryClient.invalidateQueries({ queryKey: ['planos'] });
+      queryClient.invalidateQueries({ queryKey: ["planos"] });
       setModalCriar(false);
-      Toast.show({ type: 'success', text1: 'Plano criado com sucesso!' });
+      Toast.show({ type: "success", text1: "Plano criado com sucesso!" });
     } catch {
-      Toast.show({ type: 'error', text1: 'Erro ao criar plano' });
+      Toast.show({ type: "error", text1: "Erro ao criar plano" });
     } finally {
       setLoading(false);
     }
@@ -108,11 +106,11 @@ export default function Planos() {
     try {
       setLoading(true);
       await PlanoAPI.CriarComIA(dados);
-      queryClient.invalidateQueries({ queryKey: ['planos'] });
+      queryClient.invalidateQueries({ queryKey: ["planos"] });
       setModalCriarIA(false);
-      Toast.show({ type: 'success', text1: 'Plano gerado pela IA!' });
+      Toast.show({ type: "success", text1: "Plano gerado pela IA!" });
     } catch {
-      Toast.show({ type: 'error', text1: 'Erro ao gerar plano com IA' });
+      Toast.show({ type: "error", text1: "Erro ao gerar plano com IA" });
     } finally {
       setLoading(false);
     }
@@ -123,58 +121,72 @@ export default function Planos() {
     try {
       setLoading(true);
       await PlanoAPI.Atualizar(planoSelecionado.planoId, dados);
-      queryClient.invalidateQueries({ queryKey: ['planos'] });
+      queryClient.invalidateQueries({ queryKey: ["planos"] });
       setModalConfigurar(false);
-      Toast.show({ type: 'success', text1: 'Plano atualizado!' });
+      Toast.show({ type: "success", text1: "Plano atualizado!" });
     } catch {
-      Toast.show({ type: 'error', text1: 'Erro ao salvar configurações' });
+      Toast.show({ type: "error", text1: "Erro ao salvar configurações" });
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleLancarHoras({ materiaId, horas }) {
-    if (!materiaId || !horas) {
-      Toast.show({ type: 'info', text1: 'Selecione a matéria e informe as horas' });
-      return;
+  const lancarHoras = async () => {
+    if (!horasLancadas || horasLancadas <= 0)
+      return Toast.show({ type: "info", text1: "Insira um valor válido!" });
+
+    const comparacao = await PlanoAPI.CompararHoras();
+    const horasHoje = comparacao.horasHoje;
+    const totalComNovoLancamento = horasHoje + Number(horasLancadas);
+
+    if (totalComNovoLancamento > LIMITE_DIARIO) {
+      return Toast.show({ type: "info", text1: `Limite diário de ${LIMITE_DIARIO}h atingido. Você já lançou ${horasHoje}h hoje.` });
     }
+
     try {
       setLoading(true);
-      await PlanoAPI.LancarHoras(planoSelecionado.planoId, { materiaId, horas });
-      queryClient.invalidateQueries({ queryKey: ['planos'] });
-      queryClient.invalidateQueries({ queryKey: ['planoAtivo'] });
-      queryClient.invalidateQueries({ queryKey: ['resumo'] });
-      setModalLancar(false);
-      Toast.show({ type: 'success', text1: `${horas}h lançadas com sucesso!` });
+      await PlanoAPI.LancarHoras(
+        materiaSelecionada.planoMateriaId,
+        Number(horasLancadas),
+      );
+
+      toast.success("Horas lançadas");
+      setMostrarHoras(false);
+
+      queryClient.invalidateQueries({ queryKey: ["resumo"] });
+      queryClient.invalidateQueries({ queryKey: ["comparacaoHoras"] });
+      invalidarPlanos();
     } catch {
-      Toast.show({ type: 'error', text1: 'Erro ao lançar horas' });
+      return Toast.show({ type: "error", text1: `Erro ao lançar horas` });
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   async function handleExcluirPlano() {
     if (!planoSelecionado) return;
     try {
       setLoading(true);
       await PlanoAPI.Excluir(planoSelecionado.planoId);
-      queryClient.invalidateQueries({ queryKey: ['planos'] });
-      queryClient.invalidateQueries({ queryKey: ['planoAtivo'] });
+      queryClient.invalidateQueries({ queryKey: ["planos"] });
+      queryClient.invalidateQueries({ queryKey: ["planoAtivo"] });
       setModalExcluir(false);
       setPlanoSelecionado(null);
-      Toast.show({ type: 'success', text1: 'Plano excluído!' });
+      Toast.show({ type: "success", text1: "Plano excluído!" });
     } catch {
-      Toast.show({ type: 'error', text1: 'Erro ao excluir plano' });
+      Toast.show({ type: "error", text1: "Erro ao excluir plano" });
     } finally {
       setLoading(false);
     }
   }
 
-  // ── render ──
   return (
     <View style={styles.page}>
       <LearnlyHeader>
-        <TouchableOpacity style={styles.botaoHeader} onPress={() => setModalCriar(true)}>
+        <TouchableOpacity
+          style={styles.botaoHeader}
+          onPress={() => setModalCriar(true)}
+        >
           <Ionicons name="add" size={20} color="#fff" />
         </TouchableOpacity>
       </LearnlyHeader>
@@ -186,14 +198,20 @@ export default function Planos() {
       >
         {planosList.length === 0 ? (
           <View style={styles.vazioContainer}>
-            <Text style={styles.vazioText}>Nenhum plano ainda, que tal criar um? 😊</Text>
+            <Text style={styles.vazioText}>
+              Nenhum plano ainda, que tal criar um? 😊
+            </Text>
           </View>
         ) : (
           <>
             {planoAtivo && (
               <>
                 <Text style={styles.secaoTitulo}>Plano Atual</Text>
-                <PlanoCard plano={planoAtivo} ativo onVisualizar={() => abrirVisualizar(planoAtivo)} />
+                <PlanoCard
+                  plano={planoAtivo}
+                  ativo
+                  onVisualizar={() => abrirVisualizar(planoAtivo)}
+                />
               </>
             )}
 
@@ -208,7 +226,7 @@ export default function Planos() {
                       ativo={false}
                       onVisualizar={() => abrirVisualizar(plano)}
                     />
-                  )
+                  ),
                 )}
               </>
             )}
@@ -216,26 +234,25 @@ export default function Planos() {
         )}
       </ScrollView>
 
-      {/* FAB — Criar plano com IA */}
-      <TouchableOpacity style={styles.fab} onPress={() => setModalCriarIA(true)}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setModalCriarIA(true)}
+      >
         <Ionicons name="hardware-chip-outline" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* ── Modais ── */}
       <ModalCriarPlano
         show={modalCriar}
         onHide={() => setModalCriar(false)}
         loading={loading}
         onConfirmar={handleCriarPlano}
       />
-
       <ModalCriarPlanoIA
         show={modalCriarIA}
         onHide={() => setModalCriarIA(false)}
         loading={loading}
         onConfirmar={handleCriarPlanoIA}
       />
-
       <ModalVisualizarPlano
         show={modalVisualizar}
         onHide={() => setModalVisualizar(false)}
@@ -243,7 +260,6 @@ export default function Planos() {
         onLancarHoras={irParaLancar}
         onConfigurar={irParaConfigurar}
       />
-
       <ModalConfigurarPlano
         show={modalConfigurar}
         onHide={() => setModalConfigurar(false)}
@@ -252,7 +268,6 @@ export default function Planos() {
         onSalvar={handleSalvarConfiguracoes}
         onExcluir={irParaExcluir}
       />
-
       <ModalLancarHoras
         show={modalLancar}
         onHide={() => setModalLancar(false)}
@@ -260,7 +275,6 @@ export default function Planos() {
         plano={planoSelecionado}
         onConfirmar={handleLancarHoras}
       />
-
       <ModalExcluirPlano
         show={modalExcluir}
         onHide={() => setModalExcluir(false)}
@@ -272,12 +286,16 @@ export default function Planos() {
   );
 }
 
-// ─── PlanoCard ───────────────────────────────────────────────────────────────
-
 function PlanoCard({ plano, ativo, onVisualizar }) {
-  const horasTotais     = (plano.materias || []).reduce((a, m) => a + m.horasTotais, 0);
-  const horasConcluidas = (plano.materias || []).reduce((a, m) => a + m.horasConcluidas, 0);
-  const progresso       = horasTotais > 0 ? (horasConcluidas / horasTotais) * 100 : 0;
+  const horasTotais = (plano.materias || []).reduce(
+    (a, m) => a + m.horasTotais,
+    0,
+  );
+  const horasConcluidas = (plano.materias || []).reduce(
+    (a, m) => a + m.horasConcluidas,
+    0,
+  );
+  const progresso = horasTotais > 0 ? (horasConcluidas / horasTotais) * 100 : 0;
 
   return (
     <View style={[styles.planoCard, ativo && styles.planoCardAtivo]}>
@@ -285,15 +303,20 @@ function PlanoCard({ plano, ativo, onVisualizar }) {
 
       <Text style={styles.progressoLabel}>Progresso Geral</Text>
       <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${progresso}%` }]} />
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${Math.min(progresso, 100)}%` },
+          ]}
+        />
       </View>
       <Text style={styles.progressoPercent}>{progresso.toFixed(1)}%</Text>
 
       {ativo && (
         <View style={styles.materiasRow}>
-          {plano.materias.map((m, i) => (
-            <View key={i} style={styles.materiaChip}>
-              <View style={[styles.materiaDot, { backgroundColor: m.cor || Colors.primary }]} />
+          {plano.materias.map((m) => (
+            <View key={m.planoMateriaId} style={styles.materiaChip}>
+              <View style={[styles.materiaDot, { backgroundColor: m.cor }]} />
               <Text style={styles.materiaNome}>{m.nome}</Text>
             </View>
           ))}
@@ -307,24 +330,31 @@ function PlanoCard({ plano, ativo, onVisualizar }) {
   );
 }
 
-// ─── Estilos ─────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  page:         { flex: 1, backgroundColor: Colors.background },
-  scroll:       { flex: 1 },
+  page: { flex: 1, backgroundColor: Colors.background },
+  scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 80, gap: 14 },
   botaoHeader: {
     backgroundColor: Colors.textPrimary,
     borderRadius: Radius.sm,
     padding: 8,
   },
-  vazioContainer: { marginTop: 80, alignItems: 'center', paddingHorizontal: 24 },
-  vazioText: { fontSize: Typography.xl, color: '#374151', textAlign: 'center', fontWeight: '300' },
+  vazioContainer: {
+    marginTop: 80,
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  vazioText: {
+    fontSize: Typography.xl,
+    color: "#374151",
+    textAlign: "center",
+    fontWeight: "300",
+  },
   secaoTitulo: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   planoCard: {
@@ -336,61 +366,73 @@ const styles = StyleSheet.create({
     gap: 8,
     ...Shadow.card,
   },
-  planoCardAtivo:    { borderColor: Colors.primaryBorder },
-  planoTitulo:       { fontSize: Typography.lg, fontWeight: '700', color: Colors.textPrimary },
+  planoCardAtivo: { borderColor: Colors.primaryBorder },
+  planoTitulo: {
+    fontSize: Typography.lg,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
   progressoLabel: {
     fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
     letterSpacing: 0.6,
     color: Colors.textMuted,
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: "#e2e8f0",
     borderRadius: 999,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Colors.primary,
     borderRadius: 999,
   },
-  progressoPercent:  { fontSize: Typography.xs, fontWeight: '600', color: Colors.primary },
-  materiasRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  progressoPercent: {
+    fontSize: Typography.xs,
+    fontWeight: "600",
+    color: Colors.primary,
+  },
+  materiasRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   materiaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: Radius.full,
   },
-  materiaDot:        { width: 7, height: 7, borderRadius: 999 },
-  materiaNome:       { fontSize: Typography.xs, fontWeight: '500', color: '#475569' },
+  materiaDot: { width: 7, height: 7, borderRadius: 999 },
+  materiaNome: { fontSize: Typography.xs, fontWeight: "500", color: "#475569" },
   botaoVisualizar: {
     backgroundColor: Colors.textPrimary,
     borderRadius: Radius.sm,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 4,
   },
-  botaoVisualizarText: { color: '#fff', fontWeight: '600', fontSize: Typography.sm },
+  botaoVisualizarText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: Typography.sm,
+  },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     right: 24,
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#6c5ce7',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#6c5ce7",
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 8,
-    shadowColor: '#6c5ce7',
+    shadowColor: "#6c5ce7",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

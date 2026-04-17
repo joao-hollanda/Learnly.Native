@@ -1,34 +1,35 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { View, Image, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function HeaderLearnly() {
+export default function LearnlyHeader({ children }) {
+  const { top } = useSafeAreaInsets();
+
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: top + 12 }]}>
       <Image source={require("@/assets/images/Logo.png")} style={styles.logo} />
-      <TouchableOpacity style={styles.botaoSair}>
-        <MaterialIcons
-          name={"logout"}
-          size={24}
-          color={"#4A90E2"}
-        />
-      </TouchableOpacity>
+      {children && <View style={styles.actions}>{children}</View>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: { width: 30, height: 30, marginLeft: 20, marginTop: 10 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingBottom: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E1E8ED",
   },
-  headerTitulo: { fontSize: 18, fontWeight: "bold", color: "#2C3E50" },
-  botaoSair: { padding: 8, marginTop: 10 },
-  textoBotaoSair: { color: "#E74C3C", fontWeight: "600" },
+  logo: {
+    width: 30,
+    height: 30,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
 });

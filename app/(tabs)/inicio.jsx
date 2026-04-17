@@ -134,9 +134,7 @@ export default function Inicio() {
     resumo && resumo.horasTotais > 0
       ? Math.round((resumo.horasConcluidas / resumo.horasTotais) * 100)
       : 0;
-
-  // ── Monta markedDates para react-native-calendars ──
-  // Cada data com evento recebe um dot colorido
+      
   const markedDates = {};
   eventosComStatus.forEach((ev) => {
     const key = new Date(ev.start).toISOString().split('T')[0];
@@ -155,7 +153,7 @@ export default function Inicio() {
 
     const { titulo, inicio, fim, diasSemana } = novoEvento;
     if (!titulo || !inicio || !fim || diasSemana.length === 0) {
-      Toast.show({ type: 'error', text1: 'Preencha todos os campos' });
+      Toast.show({ type: 'info', text1: 'Preencha todos os campos'});
       return;
     }
     if (inicio === fim) {
@@ -431,7 +429,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.lg,
     padding: 16,
-    // Ocupa ~50% menos o gap — 2 colunas
     width: '47.5%',
     gap: 6,
     ...Shadow.card,
@@ -499,7 +496,6 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   calBtnReset: {
-    // herdado
   },
   legendaRow: {
     flexDirection: 'row',

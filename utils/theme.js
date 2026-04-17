@@ -18,7 +18,6 @@ export const Colors = {
   warningLight: '#fffbeb',
   warningBorder: '#fde68a',
 
-  // Neutros
   background: '#f4f6f8',
   surface: '#ffffff',
   border: '#e9edf2',
@@ -29,14 +28,13 @@ export const Colors = {
   textMuted: '#94a3b8',
   textPlaceholder: '#94a3b8',
 
-  // Status de evento
   eventConcluido: '#22c55e',
   eventAtual: '#3b82f6',
   eventProximo: '#ef4444',
 };
 
 export const Typography = {
-  fontPrimary: 'System', // Expo carrega Inter via expo-font; fallback System
+  fontPrimary: 'System',
   fontSecondary: 'System',
 
   xs: 12,

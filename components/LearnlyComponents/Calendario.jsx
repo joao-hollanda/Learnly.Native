@@ -1,19 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { Calendar } from 'react-native-calendars';
 import { format } from 'date-fns';
 
-// 1. Configurar o idioma para Português
-LocaleConfig.locales['pt-br'] = {
-  monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
-  monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-  dayNames: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'],
-  dayNamesShort: ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'],
-  today: 'Hoje'
-};
-LocaleConfig.defaultLocale = 'pt-br';
-
-// Mapeamento de cores baseado no teu CSS original
 const STATUS_COLORS = {
   concluido: '#22c55e',
   atual: '#3b82f6',
@@ -25,14 +14,12 @@ export default function Calendario({ eventos = [] }) {
   const [diaSelecionado, setDiaSelecionado] = useState(null);
   const [modalVisivel, setModalVisivel] = useState(false);
 
-  // 2. Transformar a tua lista de eventos no formato que o react-native-calendars entende
   const markedDates = useMemo(() => {
     const marcacoes = {};
 
     eventos.forEach((evento) => {
-      // Garantir que temos um objeto Date válido
       const dataInicio = evento.start instanceof Date ? evento.start : new Date(evento.start);
-      const dataFormatada = format(dataInicio, 'yyyy-MM-dd'); // Ex: "2023-10-25"
+      const dataFormatada = format(dataInicio, 'yyyy-MM-dd');
 
       if (!marcacoes[dataFormatada]) {
         marcacoes[dataFormatada] = { dots: [], eventosDoDia: [] };
@@ -40,16 +27,13 @@ export default function Calendario({ eventos = [] }) {
 
       const cor = STATUS_COLORS[evento.status] || STATUS_COLORS.default;
 
-      // Adiciona uma bolinha no calendário para este evento
       marcacoes[dataFormatada].dots.push({ color: cor, key: evento.title });
-      // Guarda o evento para mostrar no Modal
       marcacoes[dataFormatada].eventosDoDia.push(evento);
     });
 
     return marcacoes;
   }, [eventos]);
 
-  // 3. Função quando tocam num dia
   const handleDayPress = (day) => {
     const dataString = day.dateString;
     const marcacao = markedDates[dataString];
@@ -66,7 +50,6 @@ export default function Calendario({ eventos = [] }) {
 
   return (
     <View style={styles.container}>
-      {/* O CALENDÁRIO */}
       <Calendar
         markingType={'multi-dot'}
         markedDates={markedDates}
@@ -102,7 +85,6 @@ export default function Calendario({ eventos = [] }) {
         style={styles.calendarCard}
       />
 
-      {/* O "TOOLTIP" / MODAL PARA MOSTRAR OS EVENTOS DO DIA */}
       <Modal
         visible={modalVisivel}
         transparent={true}
@@ -112,7 +94,7 @@ export default function Calendario({ eventos = [] }) {
         <TouchableOpacity 
           style={styles.modalOverlay} 
           activeOpacity={1} 
-          onPress={() => setModalVisivel(false)} // Fecha ao clicar fora
+          onPress={() => setModalVisivel(false)} 
         >
           <View style={styles.tooltipContainer}>
             {/* Header do Tooltip */}
@@ -160,7 +142,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     paddingBottom: 10,
-    // Sombras
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -168,10 +149,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   
-  // Estilos do Modal (Substituto do Tooltip)
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Fundo escurecido suave
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -181,7 +161,6 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '80%',
     maxWidth: 320,
-    // Sombras fortes iguais ao tooltip web
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.1,

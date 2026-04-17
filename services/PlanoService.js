@@ -1,8 +1,27 @@
 import { HTTPClient } from "./client";
 
 const PlanoAPI = {
-  async Criar(plano) {
-    const resposta = await HTTPClient.post("Plano", plano);
+  async Criar(dados) {
+    const resposta = await HTTPClient.post("Plano", {
+      titulo: dados.titulo,
+      objetivo: dados.objetivo,
+      dataInicio: _parseData(dados.dataInicio),
+      dataFim: _parseData(dados.dataFim),
+      horasPorSemana: dados.horasPorSemana ?? 0,
+      planoIa: false,
+    });
+    return resposta.data;
+  },
+
+  async CriarComIA(dados) {
+    const resposta = await HTTPClient.post("Plano", {
+      titulo: `Plano IA — ${dados.objetivo?.slice(0, 40)}`,
+      objetivo: dados.objetivo,
+      dataInicio: new Date().toISOString(),
+      dataFim: _parseData(dados.dataFim),
+      horasPorSemana: dados.horasPorSemana ?? 10,
+      planoIa: true,
+    });
     return resposta.data;
   },
 
@@ -16,15 +35,20 @@ const PlanoAPI = {
     return resposta.data;
   },
 
-  async Atualizar(plano) {
-    const resposta = await HTTPClient.put("Plano", plano);
+  async Atualizar(planoId, dados) {
+    const plano = await this.Obter(planoId);
+    const resposta = await HTTPClient.put("Plano", {
+      ...plano,
+      titulo: dados.titulo ?? plano.titulo,
+      objetivo: dados.objetivo ?? plano.objetivo,
+      dataFim: dados.dataFim ? _parseData(dados.dataFim) : plano.dataFim,
+      horasPorSemana: dados.horasPorSemana ?? plano.horasPorSemana,
+    });
     return resposta.data;
   },
 
   async AtivarPlano(planoId) {
-    const resposta = await HTTPClient.put(
-      `Plano/${planoId}/ativar`,
-    );
+    const resposta = await HTTPClient.put(`Plano/${planoId}/ativar`);
     return resposta.data;
   },
 
@@ -40,7 +64,7 @@ const PlanoAPI = {
 
   async LancarHoras(planoMateriaId, horas) {
     const resposta = await HTTPClient.put(
-      `Plano/lancar-horas?planoMateriaId=${planoMateriaId}&horas=${horas}`,
+      `Plano/lancar-horas?planoMateriaId=${planoMateriaId}&horas=${horas}`
     );
     return resposta.data;
   },
@@ -51,21 +75,26 @@ const PlanoAPI = {
   },
 
   async CompararHoras() {
-    const resposta = await HTTPClient.get(
-      `Plano/horas/comparacao`,
-    );
+    const resposta = await HTTPClient.get(`Plano/horas/comparacao`);
     return resposta.data;
   },
-  
+
   async Excluir(planoId) {
     const resposta = await HTTPClient.delete(`Plano/${planoId}`);
     return resposta.data;
   },
 
   async ObterPlanoAtivo() {
-    const resposta = await HTTPClient.get(`Plano/plano-ativo`)
+    const resposta = await HTTPClient.get(`Plano/plano-ativo`);
     return resposta.data;
-  }
+  },
 };
+
+function _parseData(valor) {
+  if (!valor) return new Date().toISOString();
+  if (valor.includes("-")) return new Date(valor).toISOString();
+  const [dia, mes, ano] = valor.split("/");
+  return new Date(`${ano}-${mes}-${dia}T00:00:00.000Z`).toISOString();
+}
 
 export default PlanoAPI;
