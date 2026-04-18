@@ -4,14 +4,14 @@
     "slug": "learnly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/appstore.png",
+    "icon": "./assets/images/Logo.png",
     "scheme": "learnly",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hollanda.learnlynative",
-      "icon": "./assets/images/appstore.png"
+      "icon": "./assets/images/Logo.png"
     },
     "android": {
       "package": "com.hollanda.learnlynative",
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/appstore.png",
+          "image": "./assets/images/Logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

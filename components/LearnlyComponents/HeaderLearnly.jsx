@@ -24,8 +24,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E1E8ED",
   },
   logo: {
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
   actions: {
     flexDirection: "row",
